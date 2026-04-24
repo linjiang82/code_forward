@@ -18,6 +18,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 class SmsReceiver : BroadcastReceiver() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val client = OkHttpClient()
+    private val processor = SmsProcessor()
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
@@ -37,28 +38,19 @@ class SmsReceiver : BroadcastReceiver() {
         val settings = SettingsManager(context)
         val target = settings.targetNumber.first()
         
-        if (sender != null && target != null && sender.contains(target)) {
+        if (sender != null && target != null && processor.shouldForward(sender, target)) {
             val apiKey = settings.emailApiKey.first()
             val to = settings.toEmail.first()
             val from = settings.fromEmail.first()
             
             if (apiKey != null && to != null && from != null) {
-                sendEmail(apiKey, to, from, "Forwarded SMS from $sender", body ?: "")
+                val json = processor.buildEmailJson(to, from, "Forwarded SMS from $sender", body ?: "")
+                sendEmail(apiKey, json)
             }
         }
     }
 
-    private fun sendEmail(apiKey: String, to: String, from: String, subject: String, content: String) {
-        // Example using a generic JSON API structure (compatible with many providers like SendGrid/EmailJS)
-        val json = """
-            {
-                "personalizations": [{"to": [{"email": "$to"}]}],
-                "from": {"email": "$from"},
-                "subject": "$subject",
-                "content": [{"type": "text/plain", "value": "$content"}]
-            }
-        """.trimIndent()
-
+    private fun sendEmail(apiKey: String, json: String) {
         val request = Request.Builder()
             .url("https://api.sendgrid.com/v3/mail/send")
             .addHeader("Authorization", "Bearer $apiKey")
