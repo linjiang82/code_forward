@@ -100,7 +100,7 @@ fun SettingsScreen(settingsManager: SettingsManager) {
         OutlinedTextField(
             value = targetNumber,
             onValueChange = { targetNumber = it },
-            label = { Text("Forward from Number (or suffix)") },
+            label = { Text("Forward from Numbers (comma-separated)") },
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -139,7 +139,7 @@ fun SettingsScreen(settingsManager: SettingsManager) {
 
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            "Instructions:\n1. Grant SMS permissions.\n2. Enter the phone number to watch.\n" +
+            "Instructions:\n1. Grant SMS permissions.\n2. Enter the phone numbers to watch (comma-separated).\n" +
                 "3. Enter your SendGrid API key and email details.\n4. Click Save.",
             style = MaterialTheme.typography.bodySmall,
         )

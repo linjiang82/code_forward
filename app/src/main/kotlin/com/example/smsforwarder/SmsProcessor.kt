@@ -5,7 +5,9 @@ class SmsProcessor {
         sender: String,
         target: String,
     ): Boolean {
-        return sender.contains(target)
+        if (target.isBlank()) return false
+        val targets = target.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        return targets.any { sender.endsWith(it) }
     }
 
     fun buildEmailJson(

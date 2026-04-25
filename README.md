@@ -1,11 +1,11 @@
 # SMS to Email Forwarder (Android)
 
-A lightweight, native Android application written in Kotlin that monitors incoming SMS messages from a specific phone number and automatically forwards them to your email address using the SendGrid API.
+A lightweight, native Android application written in Kotlin that monitors incoming SMS messages from specific phone numbers and automatically forwards them to your email address using the SendGrid API.
 
 ## Features
 
 - **Background Monitoring:** Uses a native Android `BroadcastReceiver` to listen for SMS messages even when the app is not running.
-- **Filtering:** Configure a specific target phone number (or suffix) to monitor.
+- **Filtering:** Configure a list of target phone numbers (or suffixes) to monitor, separated by commas.
 - **Secure Storage:** Sensitive API keys and configurations are stored using modern Android `Preferences DataStore`.
 - **Modern UI:** Built with Jetpack Compose for a clean and responsive configuration experience.
 - **CI/CD Integrated:** Automated linting, testing, and building via GitHub Actions.
@@ -24,7 +24,7 @@ A lightweight, native Android application written in Kotlin that monitors incomi
 
 ### Configuration
 1.  Launch the app and grant the requested **SMS Permissions**.
-2.  **Forward from Number:** Enter the phone number you want to monitor (e.g., `+1234567890` or just the last few digits).
+2.  **Forward from Numbers:** Enter one or more phone numbers you want to monitor, separated by commas (e.g., `+1234567890, +9876543210` or just the last few digits).
 3.  **SendGrid API Key:** Paste your secret API key.
 4.  **Email Addresses:** Enter the "To" (destination) and "From" (verified sender in SendGrid) email addresses.
 5.  Click **Save Configuration**.
