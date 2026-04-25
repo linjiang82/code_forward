@@ -1,11 +1,19 @@
 package com.example.smsforwarder
 
 class SmsProcessor {
-    fun shouldForward(sender: String, target: String): Boolean {
+    fun shouldForward(
+        sender: String,
+        target: String,
+    ): Boolean {
         return sender.contains(target)
     }
 
-    fun buildEmailJson(to: String, from: String, subject: String, body: String): String {
+    fun buildEmailJson(
+        to: String,
+        from: String,
+        subject: String,
+        body: String,
+    ): String {
         return """
             {
                 "personalizations": [{"to": [{"email": "$to"}]}],
@@ -13,6 +21,6 @@ class SmsProcessor {
                 "subject": "$subject",
                 "content": [{"type": "text/plain", "value": "$body"}]
             }
-        """.trimIndent()
+            """.trimIndent()
     }
 }

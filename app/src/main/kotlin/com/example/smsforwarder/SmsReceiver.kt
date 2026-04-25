@@ -20,13 +20,16 @@ class SmsReceiver : BroadcastReceiver() {
     private val client = OkHttpClient()
     private val processor = SmsProcessor()
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             for (sms in messages) {
                 val sender = sms.displayOriginatingAddress
                 val body = sms.displayMessageBody
-                
+
                 scope.launch {
                     forwardIfMatches(context, sender, body)
                 }
@@ -34,15 +37,19 @@ class SmsReceiver : BroadcastReceiver() {
         }
     }
 
-    private suspend fun forwardIfMatches(context: Context, sender: String?, body: String?) {
+    private suspend fun forwardIfMatches(
+        context: Context,
+        sender: String?,
+        body: String?,
+    ) {
         val settings = SettingsManager(context)
         val target = settings.targetNumber.first()
-        
+
         if (sender != null && target != null && processor.shouldForward(sender, target)) {
             val apiKey = settings.emailApiKey.first()
             val to = settings.toEmail.first()
             val from = settings.fromEmail.first()
-            
+
             if (apiKey != null && to != null && from != null) {
                 val json = processor.buildEmailJson(to, from, "Forwarded SMS from $sender", body ?: "")
                 sendEmail(apiKey, json)
@@ -50,12 +57,16 @@ class SmsReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun sendEmail(apiKey: String, json: String) {
-        val request = Request.Builder()
-            .url("https://api.sendgrid.com/v3/mail/send")
-            .addHeader("Authorization", "Bearer $apiKey")
-            .post(json.toRequestBody("application/json".toMediaType()))
-            .build()
+    private fun sendEmail(
+        apiKey: String,
+        json: String,
+    ) {
+        val request =
+            Request.Builder()
+                .url("https://api.sendgrid.com/v3/mail/send")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .post(json.toRequestBody("application/json".toMediaType()))
+                .build()
 
         try {
             client.newCall(request).execute().use { response ->

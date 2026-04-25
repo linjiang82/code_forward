@@ -11,7 +11,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SettingsManagerTest {
-
     private lateinit var settingsManager: SettingsManager
 
     @Before
@@ -21,17 +20,18 @@ class SettingsManagerTest {
     }
 
     @Test
-    fun saveAndReadSettings() = runBlocking {
-        val target = "123456"
-        val apiKey = "sg_test_key"
-        val to = "to@test.com"
-        val from = "from@test.com"
+    fun saveAndReadSettings() =
+        runBlocking {
+            val target = "123456"
+            val apiKey = "sg_test_key"
+            val to = "to@test.com"
+            val from = "from@test.com"
 
-        settingsManager.saveSettings(target, apiKey, to, from)
+            settingsManager.saveSettings(target, apiKey, to, from)
 
-        assertEquals(target, settingsManager.targetNumber.first())
-        assertEquals(apiKey, settingsManager.emailApiKey.first())
-        assertEquals(to, settingsManager.toEmail.first())
-        assertEquals(from, settingsManager.fromEmail.first())
-    }
+            assertEquals(target, settingsManager.targetNumber.first())
+            assertEquals(apiKey, settingsManager.emailApiKey.first())
+            assertEquals(to, settingsManager.toEmail.first())
+            assertEquals(from, settingsManager.fromEmail.first())
+        }
 }

@@ -1,13 +1,14 @@
 package com.example.smsforwarder
 
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Rule
 import org.junit.Test
 
 class SettingsScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -38,7 +39,7 @@ class SettingsScreenTest {
 
         composeTestRule.onNodeWithText("Forward from Number (or suffix)")
             .performTextInput("123456")
-        
+
         composeTestRule.onNodeWithText("123456").assertExists()
     }
 }

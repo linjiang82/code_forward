@@ -24,7 +24,12 @@ class SettingsManager(private val context: Context) {
     val toEmail: Flow<String?> = context.dataStore.data.map { it[TO_EMAIL] }
     val fromEmail: Flow<String?> = context.dataStore.data.map { it[FROM_EMAIL] }
 
-    suspend fun saveSettings(target: String, apiKey: String, to: String, from: String) {
+    suspend fun saveSettings(
+        target: String,
+        apiKey: String,
+        to: String,
+        from: String,
+    ) {
         context.dataStore.edit { settings ->
             settings[TARGET_NUMBER] = target
             settings[EMAIL_API_KEY] = apiKey

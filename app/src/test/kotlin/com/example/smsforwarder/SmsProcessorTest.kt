@@ -1,10 +1,10 @@
 package com.example.smsforwarder
 
-import org.junit.Assert.*
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SmsProcessorTest {
-
     private val processor = SmsProcessor()
 
     @Test
@@ -28,9 +28,9 @@ class SmsProcessorTest {
         val from = "from@example.com"
         val subject = "Test Subject"
         val body = "Test Body"
-        
+
         val json = processor.buildEmailJson(to, from, subject, body)
-        
+
         assertTrue(json.contains("\"to\": [{\"email\": \"$to\"}]"))
         assertTrue(json.contains("\"from\": {\"email\": \"$from\"}"))
         assertTrue(json.contains("\"subject\": \"$subject\""))
