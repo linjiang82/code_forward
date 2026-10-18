@@ -20,8 +20,25 @@ android {
         }
     }
 
+    // Release signing is configured outside the repo: set these in ~/.gradle/gradle.properties
+    // or as environment variables. Without them, assembleRelease produces an unsigned APK.
+    def releaseStoreFile = findProperty('RELEASE_STORE_FILE') ?: System.getenv('RELEASE_STORE_FILE')
+    signingConfigs {
+        release {
+            if (releaseStoreFile) {
+                storeFile file(releaseStoreFile)
+                storePassword findProperty('RELEASE_STORE_PASSWORD') ?: System.getenv('RELEASE_STORE_PASSWORD')
+                keyAlias findProperty('RELEASE_KEY_ALIAS') ?: System.getenv('RELEASE_KEY_ALIAS')
+                keyPassword findProperty('RELEASE_KEY_PASSWORD') ?: System.getenv('RELEASE_KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (releaseStoreFile) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -61,8 +78,17 @@ dependencies {
     
     // Networking for Email API
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
-    
+
+    // Background sending with retries
+    implementation 'androidx.work:work-runtime-ktx:2.9.1'
+
+    // Password-protected (AES-256) PDF attachments
+    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
+
     testImplementation 'junit:junit:4.13.2'
+    // Real org.json for unit tests; the android.jar copy is a stub on the JVM
+    testImplementation 'org.json:json:20240303'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.11.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation platform('androidx.compose:compose-bom:2023.08.00')

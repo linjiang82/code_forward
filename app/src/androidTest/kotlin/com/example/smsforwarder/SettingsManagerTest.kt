@@ -23,14 +23,17 @@ class SettingsManagerTest {
     fun saveAndReadSettings() =
         runBlocking {
             val target = "123456"
-            val apiKey = "sg_test_key"
+            val apiKey = "re_test_key"
             val to = "to@test.com"
             val from = "from@test.com"
 
-            settingsManager.saveSettings(target, apiKey, to, from)
+            settingsManager.saveSettings(target, apiKey, to, from, forwardAll = true, encryptPdf = true, pdfPin = "4321")
 
             assertEquals(target, settingsManager.targetNumber.first())
-            assertEquals(apiKey, settingsManager.emailApiKey.first())
+            assertEquals(true, settingsManager.forwardAll.first())
+            assertEquals(true, settingsManager.encryptPdf.first())
+            assertEquals("4321", settingsManager.getPdfPin())
+            assertEquals(apiKey, settingsManager.getApiKey())
             assertEquals(to, settingsManager.toEmail.first())
             assertEquals(from, settingsManager.fromEmail.first())
         }
