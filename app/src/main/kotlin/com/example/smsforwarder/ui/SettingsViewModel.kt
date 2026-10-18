@@ -17,7 +17,11 @@ data class SettingsUiState(
     val message: String? = null,
     val saved: Boolean = false,
     val lastStatus: String? = null,
-)
+    val hasUnsavedChanges: Boolean = false,
+) {
+    // The test email uses the saved settings, so edits must be saved first.
+    val canSendTestEmail: Boolean get() = saved && !hasUnsavedChanges
+}
 
 class SettingsViewModel(
     private val repository: SettingsRepository,
@@ -28,10 +32,14 @@ class SettingsViewModel(
     private val state = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = state
 
+    // What the repository currently holds; the form is "dirty" when it differs from this.
+    private var lastSaved = ForwardingSettings()
+
     init {
         viewModelScope.launch {
             val saved = repository.load()
-            state.update { it.copy(form = saved, saved = saved.apiKey.isNotBlank()) }
+            lastSaved = saved
+            state.update { it.copy(form = saved, saved = saved.apiKey.isNotBlank(), hasUnsavedChanges = false) }
         }
         viewModelScope.launch {
             repository.lastStatus.collect { status -> state.update { it.copy(lastStatus = status) } }
@@ -39,7 +47,10 @@ class SettingsViewModel(
     }
 
     fun update(transform: (ForwardingSettings) -> ForwardingSettings) {
-        state.update { it.copy(form = transform(it.form)) }
+        state.update {
+            val form = transform(it.form)
+            it.copy(form = form, hasUnsavedChanges = form != lastSaved)
+        }
     }
 
     fun save() {
@@ -51,12 +62,17 @@ class SettingsViewModel(
         }
         viewModelScope.launch {
             repository.save(form)
-            state.update { it.copy(saved = true, message = "Configuration saved.") }
+            lastSaved = form
+            state.update { it.copy(saved = true, hasUnsavedChanges = it.form != form, message = "Configuration saved.") }
         }
     }
 
     /** Uses the saved settings, so it is only available after a successful save. */
     fun sendTestEmail() {
+        if (state.value.hasUnsavedChanges) {
+            state.update { it.copy(message = "Save your changes before sending a test email.") }
+            return
+        }
         if (!state.value.saved) return
         scheduler.schedule(
             ForwardRequest(sender = "test", body = "This is a test email from SMS Forwarder.", receivedAtMillis = now(), isTest = true),

@@ -92,6 +92,20 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun testEmailButtonIsDisabledWithUnsavedChanges() {
+        state = state.copy(saved = true, hasUnsavedChanges = true)
+        setContent()
+
+        composeTestRule.onNodeWithText("Send Test Email").performScrollTo().assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Save your changes before sending a test email.").performScrollTo().assertIsDisplayed()
+
+        state = state.copy(hasUnsavedChanges = false)
+
+        composeTestRule.onNodeWithText("Send Test Email").assertIsEnabled()
+        composeTestRule.onNodeWithText("Save your changes before sending a test email.").assertDoesNotExist()
+    }
+
+    @Test
     fun missingPermissionShowsWarning() {
         setContent(smsPermissionGranted = false)
 

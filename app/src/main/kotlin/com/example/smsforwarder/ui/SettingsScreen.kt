@@ -150,8 +150,16 @@ fun SettingsScreen(
             Text("Save Configuration")
         }
 
-        OutlinedButton(onClick = onSendTestEmail, enabled = state.saved, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = onSendTestEmail, enabled = state.canSendTestEmail, modifier = Modifier.fillMaxWidth()) {
             Text("Send Test Email")
+        }
+
+        if (state.saved && state.hasUnsavedChanges) {
+            Text(
+                "Save your changes before sending a test email.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
 
         state.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }

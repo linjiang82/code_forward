@@ -119,4 +119,65 @@ class SettingsViewModelTest {
 
         assertEquals("now", viewModel.uiState.value.lastStatus)
     }
+
+    @Test
+    fun `freshly loaded settings have no unsaved changes`() {
+        val state = viewModel(FakeSettingsRepository(validSettings)).uiState.value
+
+        assertFalse(state.hasUnsavedChanges)
+        assertTrue(state.canSendTestEmail)
+    }
+
+    @Test
+    fun `editing after a save blocks the test email until saved again`() {
+        val viewModel = viewModel(FakeSettingsRepository(validSettings))
+
+        viewModel.update { it.copy(encryptPdf = true, pdfPin = "1234") }
+
+        assertTrue(viewModel.uiState.value.hasUnsavedChanges)
+        assertFalse(viewModel.uiState.value.canSendTestEmail)
+
+        viewModel.sendTestEmail()
+
+        assertTrue(scheduler.scheduled.isEmpty())
+        assertEquals("Save your changes before sending a test email.", viewModel.uiState.value.message)
+    }
+
+    @Test
+    fun `reverting an edit clears unsaved changes`() {
+        val viewModel = viewModel(FakeSettingsRepository(validSettings))
+
+        viewModel.update { it.copy(forwardAll = true) }
+        viewModel.update { it.copy(forwardAll = false) }
+
+        assertFalse(viewModel.uiState.value.hasUnsavedChanges)
+    }
+
+    @Test
+    fun `saving the edits allows the test email with the new settings`() {
+        val repository = FakeSettingsRepository(validSettings)
+        val viewModel = viewModel(repository)
+
+        viewModel.update { it.copy(encryptPdf = true, pdfPin = "1234") }
+        viewModel.save()
+
+        assertFalse(viewModel.uiState.value.hasUnsavedChanges)
+        assertTrue(viewModel.uiState.value.canSendTestEmail)
+        assertTrue(repository.settings.encryptPdf)
+
+        viewModel.sendTestEmail()
+
+        assertEquals(1, scheduler.scheduled.size)
+    }
+
+    @Test
+    fun `a save rejected by validation keeps the changes unsaved`() {
+        val viewModel = viewModel(FakeSettingsRepository(validSettings))
+
+        viewModel.update { it.copy(encryptPdf = true, pdfPin = "12") }
+        viewModel.save()
+
+        assertTrue(viewModel.uiState.value.hasUnsavedChanges)
+        assertFalse(viewModel.uiState.value.canSendTestEmail)
+    }
 }
