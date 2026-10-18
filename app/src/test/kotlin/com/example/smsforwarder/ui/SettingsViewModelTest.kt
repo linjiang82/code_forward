@@ -82,7 +82,7 @@ class SettingsViewModelTest {
         viewModel.save()
 
         assertEquals(validSettings, repository.settings)
-        assertEquals("Configuration saved.", viewModel.uiState.value.message)
+        assertEquals("Settings saved.", viewModel.uiState.value.message)
         assertTrue(viewModel.uiState.value.saved)
     }
 
@@ -179,5 +179,34 @@ class SettingsViewModelTest {
 
         assertTrue(viewModel.uiState.value.hasUnsavedChanges)
         assertFalse(viewModel.uiState.value.canSendTestEmail)
+    }
+
+    @Test
+    fun `save is disabled when there is nothing new to save`() {
+        val viewModel = viewModel(FakeSettingsRepository(validSettings))
+        assertFalse(viewModel.uiState.value.canSave)
+
+        viewModel.update { it.copy(forwardAll = true) }
+        assertTrue(viewModel.uiState.value.canSave)
+
+        viewModel.save()
+        assertFalse(viewModel.uiState.value.canSave)
+    }
+
+    @Test
+    fun `save is enabled when nothing has been saved yet`() {
+        assertTrue(viewModel(FakeSettingsRepository()).uiState.value.canSave)
+    }
+
+    @Test
+    fun `messageShown clears the message so it is shown only once`() {
+        val viewModel = viewModel(FakeSettingsRepository(validSettings))
+        viewModel.update { it.copy(forwardAll = true) }
+        viewModel.save()
+        assertEquals("Settings saved.", viewModel.uiState.value.message)
+
+        viewModel.messageShown()
+
+        assertEquals(null, viewModel.uiState.value.message)
     }
 }
