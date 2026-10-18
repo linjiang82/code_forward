@@ -25,7 +25,7 @@ adb emu sms send 5550123456 "hello"     # simulate an incoming SMS on an emulato
 
 ## Architecture
 
-Lightweight Clean Architecture in one module. Dependencies point inward: `ui`, `background` and `data` depend on `domain`; `domain` depends on nothing Android-specific and is fully unit-tested on the JVM.
+Lightweight Clean Architecture in one module. **Dependency rule:** `data` and presentation (`ui`, `background`) may depend on `domain`; `domain` depends on neither of them and on no Android API (`android.*`/`androidx.*`), so it is fully unit-tested on the JVM. Only `di` may reference every layer. `ArchitectureTest` enforces this by scanning imports, so a violation fails `testDebugUnitTest`.
 
 ```
 domain/      pure Kotlin: models, ports (interfaces), SmsProcessor, SettingsValidator, use cases
@@ -48,7 +48,7 @@ Flow: `SmsReceiver` → `SelectMessagesToForwardUseCase` (join multipart PDUs, f
 
 Write the test first and watch it fail before implementing (see the global AGENTS.md rules).
 
-- JVM tests (`app/src/test`) cover the domain, the ViewModel (with `kotlinx-coroutines-test`, `Dispatchers.setMain`) and `ResendEmailSender` (OkHttp `MockWebServer`). Fakes for every port are in `test/.../domain/Fakes.kt`.
+- JVM tests (`app/src/test`) cover the layer rule (`ArchitectureTest`), the domain, the ViewModel (with `kotlinx-coroutines-test`, `Dispatchers.setMain`) and `ResendEmailSender` (OkHttp `MockWebServer`). Fakes for every port are in `test/.../domain/Fakes.kt`.
 - Instrumented tests (`app/src/androidTest`) cover Android-bound code: the DataStore repository (throwaway DataStore file), the encrypted PDF (opens only with the right PIN) and the stateless screen (in-memory state). None of them touch the app's real settings. CI doesn't run them; use an emulator (`ANDROID_SERIAL=emulator-5554`).
 
 ## Conventions
