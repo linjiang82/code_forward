@@ -21,6 +21,9 @@ data class SettingsUiState(
 ) {
     // The test email uses the saved settings, so edits must be saved first.
     val canSendTestEmail: Boolean get() = saved && !hasUnsavedChanges
+
+    // Nothing to save once the current form is stored.
+    val canSave: Boolean get() = !saved || hasUnsavedChanges
 }
 
 class SettingsViewModel(
@@ -63,8 +66,13 @@ class SettingsViewModel(
         viewModelScope.launch {
             repository.save(form)
             lastSaved = form
-            state.update { it.copy(saved = true, hasUnsavedChanges = it.form != form, message = "Configuration saved.") }
+            state.update { it.copy(saved = true, hasUnsavedChanges = it.form != form, message = "Settings saved.") }
         }
+    }
+
+    /** The UI calls this after displaying [SettingsUiState.message], so each message shows once. */
+    fun messageShown() {
+        state.update { it.copy(message = null) }
     }
 
     /** Uses the saved settings, so it is only available after a successful save. */

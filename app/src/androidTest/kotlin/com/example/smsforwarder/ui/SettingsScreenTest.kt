@@ -26,12 +26,18 @@ class SettingsScreenTest {
 
     private var state by mutableStateOf(SettingsUiState(form = ForwardingSettings(targetNumbers = "123456")))
 
+    private var messagesShown = 0
+
     private fun setContent(smsPermissionGranted: Boolean = true) {
         composeTestRule.setContent {
             SettingsScreen(
                 state = state,
                 smsPermissionGranted = smsPermissionGranted,
                 onUpdate = { transform -> state = state.copy(form = transform(state.form)) },
+                onMessageShown = {
+                    messagesShown++
+                    state = state.copy(message = null)
+                },
             )
         }
     }
@@ -103,6 +109,30 @@ class SettingsScreenTest {
 
         composeTestRule.onNodeWithText("Send Test Email").assertIsEnabled()
         composeTestRule.onNodeWithText("Save your changes before sending a test email.").assertDoesNotExist()
+    }
+
+    @Test
+    fun saveButtonShowsSavedWhenThereIsNothingToSave() {
+        state = state.copy(saved = true, hasUnsavedChanges = false)
+        setContent()
+
+        composeTestRule.onNodeWithText("Saved").performScrollTo().assertIsNotEnabled()
+
+        state = state.copy(hasUnsavedChanges = true)
+
+        composeTestRule.onNodeWithText("Save Configuration").performScrollTo().assertIsEnabled()
+    }
+
+    @Test
+    fun messagesAppearAsSnackbarAndAreMarkedShown() {
+        setContent()
+
+        state = state.copy(message = "Settings saved.")
+
+        composeTestRule.onNodeWithText("Settings saved.").assertIsDisplayed()
+        // The snackbar dismisses itself, then reports the message as shown.
+        composeTestRule.waitUntil(timeoutMillis = 10_000) { messagesShown == 1 }
+        composeTestRule.onNodeWithText("Settings saved.").assertDoesNotExist()
     }
 
     @Test
