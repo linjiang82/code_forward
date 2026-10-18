@@ -1,4 +1,4 @@
-package com.example.smsforwarder
+package com.example.smsforwarder.data.pdf
 
 import android.content.Context
 import android.graphics.Typeface
@@ -9,6 +9,7 @@ import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.style.StyleSpan
+import com.example.smsforwarder.domain.EncryptedPdfBuilder
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
@@ -21,19 +22,22 @@ import java.util.UUID
  * readable content. Text is drawn by Android's own text stack, so any script or emoji the phone
  * can display ends up in the PDF.
  */
-object EncryptedSmsPdf {
-    // A4 in PDF points
-    private const val PAGE_WIDTH = 595
-    private const val PAGE_HEIGHT = 842
-    private const val MARGIN = 48
+class EncryptedSmsPdf(context: Context) : EncryptedPdfBuilder {
+    private val context = context.applicationContext
 
-    fun build(
-        context: Context,
+    private companion object {
+        // A4 in PDF points
+        const val PAGE_WIDTH = 595
+        const val PAGE_HEIGHT = 842
+        const val MARGIN = 48
+    }
+
+    override fun build(
         sender: String,
         body: String,
         receivedAt: String,
         password: String,
-    ): ByteArray = encrypt(context, render(sender, body, receivedAt), password)
+    ): ByteArray = encrypt(render(sender, body, receivedAt), password)
 
     private fun render(
         sender: String,
@@ -84,11 +88,10 @@ object EncryptedSmsPdf {
     }
 
     private fun encrypt(
-        context: Context,
         pdf: ByteArray,
         password: String,
     ): ByteArray {
-        PDFBoxResourceLoader.init(context.applicationContext)
+        PDFBoxResourceLoader.init(context)
         PDDocument.load(pdf).use { document ->
             // Random owner password: nobody can lift the protection without knowing the user password.
             val policy =

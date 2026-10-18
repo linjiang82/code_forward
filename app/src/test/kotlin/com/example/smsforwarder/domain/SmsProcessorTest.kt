@@ -1,4 +1,4 @@
-package com.example.smsforwarder
+package com.example.smsforwarder.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

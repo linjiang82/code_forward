@@ -25,17 +25,31 @@ adb emu sms send 5550123456 "hello"     # simulate an incoming SMS on an emulato
 
 ## Architecture
 
-SMS → `SmsReceiver` → `ForwardWorker` → `EmailSender`, with the decision logic kept in `SmsProcessor` so it is testable on the JVM:
+Lightweight Clean Architecture in one module. **Dependency rule:** `data` and presentation (`ui`, `background`) may depend on `domain`; `domain` depends on neither of them and on no Android API (`android.*`/`androidx.*`), so it is fully unit-tested on the JVM. Only `di` may reference every layer. `ArchitectureTest` enforces this by scanning imports, so a violation fails `testDebugUnitTest`.
 
-- `SmsReceiver` — manifest-registered `BroadcastReceiver` for `SMS_RECEIVED`. It joins multipart PDUs per sender, uses `goAsync()` to read the target list, and enqueues a `ForwardWorker` only for matching messages. It does no network work itself.
-- `ForwardWorker` — `CoroutineWorker` with a network constraint and exponential backoff. It maps `SendResult.Retryable` (IO errors, 429, 5xx) to `Result.retry()` up to 10 attempts, and everything else to failure. When `encrypt_pdf` is on, it attaches an `EncryptedSmsPdf` instead of putting the SMS in the email (generic subject, no sender or body in clear text), and it fails rather than falling back to plain text if the PIN is missing. It writes a human-readable outcome to the `last_status` setting, which the UI shows. The "Send Test Email" button reuses it with `isTest = true`.
-- `email/` — the email provider layer. `EmailSender` is the interface (`Email` in, `SendResult` out). `ResendEmailSender` owns the Resend wire format, the `Idempotency-Key` header (the worker passes its work id, so retries can't send duplicates) and the HTTP-status → `SendResult` mapping. `createEmailSender()` is the only place that picks the provider. Provider-specific code should not leak out of this package. `ResendEmailSenderTest` runs against OkHttp `MockWebServer`.
-- `SmsProcessor` — pure Kotlin with no Android dependencies: sender matching (separators like spaces, dashes and parentheses removed; case-insensitive suffix match; targets shorter than `MIN_TARGET_LENGTH` = 4 are ignored; the `forward_all` setting bypasses the list entirely) and multipart joining. Put new business logic here so it can be covered by `app/src/test` unit tests. Those tests use the real `org.json` instead of the android.jar stub.
-- `EncryptedSmsPdf` — draws the SMS with Android's `PdfDocument`/`StaticLayout`, so every script and emoji the phone supports works. Then PdfBox-Android (`com.tom-roush:pdfbox-android`) applies AES-256 password protection with the PIN as the user password and a random owner password. PdfBox needs Android classes, so `EncryptedSmsPdfTest` is an instrumented test.
-- `SettingsManager` — Preferences DataStore (`settings`). The API key and PDF PIN are stored encrypted (`email_api_key_enc`, `pdf_pin_enc`) via `SecretCipher` (AES-GCM, Android Keystore key), so use `getApiKey()`/`getPdfPin()`, not a Flow. The legacy plaintext `email_api_key` is read as a fallback and removed on the next save. Keystore code only runs on a device, not in JVM unit tests.
-- `MainActivity` / `SettingsScreen` — a Compose form with validation, a warning card when `RECEIVE_SMS` is denied, a Send Test Email button and the last-status line. `SettingsScreen` takes the permission state and callbacks as parameters, so tests can call `SettingsScreen(settingsManager)`.
+```
+domain/      pure Kotlin: models, ports (interfaces), SmsProcessor, SettingsValidator, use cases
+data/        implementations of the ports: DataStore settings, Resend email, encrypted PDF
+background/  Android entry points: SmsReceiver, ForwardWorker, WorkManagerForwardScheduler
+ui/          MainActivity (permission only), SettingsViewModel, stateless SettingsScreen
+di/          AppContainer: the composition root, created once in SmsForwarderApp
+```
 
-Tests in `app/src/androidTest` need a device and are not run in CI. They write to the app's real DataStore, so a UI test can see values another test saved (`SettingsScreenTest` resets settings in `@Before`). Never run them on a phone with real settings: they overwrite the API key. Use an emulator (`ANDROID_SERIAL=emulator-5554`).
+Flow: `SmsReceiver` → `SelectMessagesToForwardUseCase` (join multipart PDUs, filter by watched numbers or forward-all) → `ForwardScheduler` (WorkManager: network constraint, exponential backoff) → `ForwardWorker` → `ForwardSmsUseCase` → `EmailSender`.
+
+- **Ports** (`domain/Ports.kt`, `domain/email/EmailSender.kt`): `SettingsRepository`, `EncryptedPdfBuilder`, `ForwardScheduler`, `EmailSender`/`EmailSenderFactory`. Only `di/AppContainer` picks implementations. To switch email provider, add an `EmailSender` in `data/email/` and change the factory there.
+- **`ForwardSmsUseCase`** holds the forwarding rules. It chooses plain text or an encrypted PDF (generic subject, no sender or body in clear text). It never falls back to plain text when encryption is on but the PIN or PDF fails. It retries `SendResult.Retryable` (IO errors, 429, 5xx) until `MAX_ATTEMPTS` = 10, and writes the user-visible `last_status`. `ForwardWorker` only maps `ForwardOutcome` to `Result` and passes its work id as the Resend `Idempotency-Key`.
+- **`SmsProcessor`**: sender matching (spaces, dashes and parentheses removed; case-insensitive suffix match; targets shorter than `MIN_TARGET_LENGTH` = 4 are ignored; forward-all bypasses the list) and multipart joining.
+- **`DataStoreSettingsRepository`**: secrets (`email_api_key_enc`, `pdf_pin_enc`) are encrypted via `SecretCipher` (AES-GCM, Android Keystore key). The legacy plaintext `email_api_key` is read as a fallback and removed on save. It takes a `DataStore` in its constructor so tests can use a throwaway file.
+- **`EncryptedSmsPdf`** draws text with Android's `PdfDocument`/`StaticLayout`, so every script and emoji the phone supports works. PdfBox-Android then applies AES-256 with the PIN as the user password.
+- **UI**: `SettingsScreen` is stateless (state + callbacks). `SettingsRoute` connects it to `SettingsViewModel`, which handles loading, validation (`SettingsValidator`), saving and the test email.
+
+## Testing
+
+Write the test first and watch it fail before implementing (see the global AGENTS.md rules).
+
+- JVM tests (`app/src/test`) cover the layer rule (`ArchitectureTest`), the domain, the ViewModel (with `kotlinx-coroutines-test`, `Dispatchers.setMain`) and `ResendEmailSender` (OkHttp `MockWebServer`). Fakes for every port are in `test/.../domain/Fakes.kt`.
+- Instrumented tests (`app/src/androidTest`) cover Android-bound code: the DataStore repository (throwaway DataStore file), the encrypted PDF (opens only with the right PIN) and the stateless screen (in-memory state). None of them touch the app's real settings. CI doesn't run them; use an emulator (`ANDROID_SERIAL=emulator-5554`).
 
 ## Conventions
 

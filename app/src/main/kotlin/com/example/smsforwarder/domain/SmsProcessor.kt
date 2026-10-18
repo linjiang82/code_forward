@@ -1,6 +1,4 @@
-package com.example.smsforwarder
-
-data class SmsMessage(val sender: String, val body: String)
+package com.example.smsforwarder.domain
 
 class SmsProcessor {
     companion object {

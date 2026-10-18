@@ -1,4 +1,4 @@
-package com.example.smsforwarder
+package com.example.smsforwarder.data.settings
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties

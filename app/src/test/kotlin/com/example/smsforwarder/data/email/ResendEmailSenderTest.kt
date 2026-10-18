@@ -1,5 +1,8 @@
-package com.example.smsforwarder.email
+package com.example.smsforwarder.data.email
 
+import com.example.smsforwarder.domain.email.Attachment
+import com.example.smsforwarder.domain.email.Email
+import com.example.smsforwarder.domain.email.SendResult
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer

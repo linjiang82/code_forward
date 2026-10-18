@@ -1,5 +1,8 @@
-package com.example.smsforwarder.email
+package com.example.smsforwarder.data.email
 
+import com.example.smsforwarder.domain.email.Email
+import com.example.smsforwarder.domain.email.EmailSender
+import com.example.smsforwarder.domain.email.SendResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType

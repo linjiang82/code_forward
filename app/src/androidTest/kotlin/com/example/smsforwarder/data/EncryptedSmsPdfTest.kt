@@ -1,8 +1,9 @@
-package com.example.smsforwarder
+package com.example.smsforwarder.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.smsforwarder.data.pdf.EncryptedSmsPdf
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
@@ -26,7 +27,7 @@ class EncryptedSmsPdfTest {
 
     @Test
     fun pdfOpensOnlyWithThePin() {
-        val pdf = EncryptedSmsPdf.build(context, "+15550123456", "Your code is 482913", "Oct 18, 2026 3:38 PM", "1234")
+        val pdf = EncryptedSmsPdf(context).build("+15550123456", "Your code is 482913", "Oct 18, 2026 3:38 PM", "1234")
         // Kept for manual inspection: adb pull /sdcard/Android/data/com.example.smsforwarder/files/
         context.getExternalFilesDir(null)?.let { File(it, "test-encrypted.pdf").writeBytes(pdf) }
 
@@ -46,7 +47,7 @@ class EncryptedSmsPdfTest {
     fun longAndNonLatinMessagesSpanMultiplePages() {
         val body = "您的验证码是 482913 🔐\n" + "Line of a very long message. ".repeat(400)
 
-        val pdf = EncryptedSmsPdf.build(context, "银行", body, "2026年10月18日", "1234")
+        val pdf = EncryptedSmsPdf(context).build("银行", body, "2026年10月18日", "1234")
         context.getExternalFilesDir(null)?.let { File(it, "test-encrypted-long.pdf").writeBytes(pdf) }
 
         PDDocument.load(pdf, "1234").use { document ->
