@@ -15,10 +15,12 @@ A lightweight, native Android application written in Kotlin that monitors incomi
 
 ## How It Works
 
-1.  **SmsReceiver:** A system-level listener that catches the `SMS_RECEIVED` intent and joins multipart messages into one.
-2.  **SmsProcessor:** Pure business logic that checks whether the sender matches your configuration.
-3.  **ForwardWorker:** For each matching message, a WorkManager job sends the email through an `EmailSender` and records the outcome.
-4.  **EmailSender:** Interface for the email provider. `ResendEmailSender` is the current implementation; to switch providers, add another implementation and return it from `createEmailSender` in `email/EmailSender.kt`.
+1.  **SmsReceiver:** A system-level listener that catches the `SMS_RECEIVED` intent and hands the message parts to the domain layer.
+2.  **SelectMessagesToForwardUseCase:** Joins multipart messages and keeps those from watched numbers (or all, with forward-all on).
+3.  **ForwardWorker:** A WorkManager job per message that waits for network, retries with backoff, and runs **ForwardSmsUseCase**, which builds the plain or encrypted-PDF email and records the outcome.
+4.  **EmailSender:** Interface for the email provider. `ResendEmailSender` is the current implementation; `di/AppContainer.kt` is the only place that chooses it.
+
+The code follows a lightweight Clean Architecture (`domain`, `data`, `background`, `ui`, `di`). See `CLAUDE.md` for the layer rules.
 
 ## Setup Instructions
 

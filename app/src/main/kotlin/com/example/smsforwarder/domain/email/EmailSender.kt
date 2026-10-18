@@ -1,4 +1,4 @@
-package com.example.smsforwarder.email
+package com.example.smsforwarder.domain.email
 
 data class Email(
     val from: String,
@@ -33,5 +33,7 @@ interface EmailSender {
     ): SendResult
 }
 
-/** The single place that decides which provider the app uses. */
-fun createEmailSender(apiKey: String): EmailSender = ResendEmailSender(apiKey)
+/** Creates a sender for the stored API key; the implementation is chosen in the DI container. */
+fun interface EmailSenderFactory {
+    fun create(apiKey: String): EmailSender
+}
